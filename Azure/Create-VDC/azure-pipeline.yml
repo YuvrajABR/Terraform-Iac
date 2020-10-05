@@ -1,0 +1,91 @@
+trigger: none
+
+parameters:
+- name:  subscriptionId
+  displayName: subscriptionId
+  type: string
+
+- name:  rgname 
+  displayName: Resource Group
+  type: string
+
+- name:  location 
+  displayName: Location
+  type: string
+
+- name:  vnet_cidr_range 
+  displayName: VNET CIDR Range
+  type: string
+
+- name: bke_subnet 
+  displayName: BKE Subnet Prefix
+  type: string
+
+- name: core_subnet 
+  displayName: Core Subnet Prefix
+  type: string
+
+- name: dmz_subnet 
+  displayName: DMZ Subnet Prefix
+  type: string
+
+- name: edg_subnet 
+  displayName: EDG Subnet Prefix
+  type: string
+
+- name: BUCode 
+  displayName: BU code
+  type: string
+
+- name: CostCenter 
+  displayName: CostCenter
+
+- name: DivCode 
+  displayName: DIV code
+  type: string
+
+- name: AppCode 
+  displayName: App code
+  type: string
+
+
+stages:
+- stage: AzureVDC
+  jobs:
+  - job: AzureVDC
+    timeoutInMinutes: 0
+    pool:
+      vmImage: windows-latest
+    steps:
+    - task: TerraformInstaller@0
+      inputs:
+        terraformVersion: '0.13.2'
+    - task: TerraformTaskV1@0
+      displayName: Init
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        workingDirectory: '' #Azure Devops Repo Path
+        backendServiceArm: 'NA'
+        backendAzureRmResourceGroupName: 'NA'
+        backendAzureRmStorageAccountName: 'NA'
+        backendAzureRmContainerName: 'NA' #Azure Subscriptionid value here
+        backendAzureRmKey: 'Dev/AzureVDC/${{ parameters.rgname }}/terraform.tfstate'
+
+    - task: TerraformTaskV1@0
+      displayName: Plan
+      inputs:
+        provider: 'azurerm'
+        command: 'plan'
+        workingDirectory: '' #Azure Devops Repo Path
+        commandOptions: '-var "subscriptionId="${{ parameters.subscriptionId }}"" -var "rgname="${{ parameters.rgname }}"" -var "location="${{ parameters.location }}"" -var "vnet_cidr_range="${{ parameters.vnet_cidr_range }}"" -var "bke_subnet="${{ parameters.bke_subnet }}"" -var "core_subnet="${{ parameters.core_subnet }}"" -var  "dmz_subnet="${{ parameters.dmz_subnet }}"" -var  "edg_subnet="${{ parameters.edg_subnet }}"" -var  "BUCode="${{ parameters.BUCode }}"" -var  "CostCenter="${{ parameters.CostCenter }}"" -var "DivCode="${{ parameters.DivCode }}"" -var  "AppCode="${{ parameters.AppCode }}"" -out="out.tfplan"'
+        environmentServiceNameAzureRM: '' #Azure Subscriptionid value here
+        
+    - task: TerraformTaskV1@0
+      displayName: Apply
+      inputs:
+        provider: 'azurerm'
+        command: 'apply'
+        environmentServiceNameAzureRM: '' #Azure Subscriptionid value here
+        workingDirectory: '' #Azure Devops Repo Path
+        commandOptions: out.tfplan
